@@ -1,0 +1,4 @@
+/.idea
+/.vscode
+/nft/target
+/nft/Cargo.lock
