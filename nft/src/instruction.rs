@@ -73,14 +73,12 @@ impl VoilaInstruction {
                 buf.extend_from_slice(&max_amount.to_le_bytes());
 
                 let mut data = name.try_to_vec().expect("name is valid utf8");
-                data.resize(NAME_LEN, 0);
+                data.resize(NAME_LEN, 0xFF);
                 buf.extend(data);
                 
                 let mut data = uri.try_to_vec().expect("uri is valid utf8");
-                data.resize(URL_LEN, 0);
+                data.resize(URL_LEN, 0xFF);
                 buf.extend(data);
-
-                println!("{}", buf.len());
             }
         }
 
@@ -104,6 +102,9 @@ impl VoilaInstruction {
         }
         let (data, rest) = input.split_at(LEN);
         let s = String::try_from_slice(data)?;
+
+        msg!("test: {}", s);
+
         Ok((s, rest))
     }
 
