@@ -10,14 +10,13 @@ use solana_program::{
 };
 use spl_associated_token_account::get_associated_token_address;
 
-use crate::{error::VoilaError, pda::{get_key_info_pda, get_user_key_record_pda, get_common_nft_pda, get_common_nft_authority_pda, get_common_nft_mint_pda}, ID};
+use crate::{error::VoilaError, pda::*, ID};
 
 const INSTRUCTION_LEN: usize = 32 + 8 + 2 + 64 + 64;
 
-/// Instructions supported by the lending program.
 #[derive(Debug, PartialEq)]
 pub enum VoilaInstruction {
-    // 0 ~ 127
+    // 0 ~ 127 user
     PurchaseKey,
     PurchaseCommonNFT,
     #[cfg(feature = "metaplex")]
