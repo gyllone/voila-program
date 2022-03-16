@@ -1,5 +1,4 @@
 use std::convert::TryInto;
-use borsh::{BorshDeserialize, BorshSerialize};
 use solana_program::{
     program_error::ProgramError,
     pubkey::{Pubkey, PUBKEY_BYTES},
@@ -11,9 +10,6 @@ use solana_program::{
 use spl_associated_token_account::get_associated_token_address;
 
 use crate::{error::VoilaError, pda::*, ID};
-
-const NAME_LEN: usize = 16;
-const URL_LEN: usize = 64;
 
 #[derive(Debug, PartialEq)]
 pub enum VoilaInstruction {
@@ -46,8 +42,8 @@ impl VoilaInstruction {
                 let (receipt, rest) = Self::unpack_pubkey(rest)?;
                 let (price, rest) = Self::unpack_u64(rest)?;
                 let (max_amount, rest) = Self::unpack_u16(rest)?;
-                let (name, rest) = Self::unpack_string::<NAME_LEN>(rest)?;
-                let (uri, _rest) = Self::unpack_string::<URL_LEN>(rest)?;
+                let (name, rest) = Self::unpack_string(rest)?;
+                let (uri, _rest) = Self::unpack_string(rest)?;
                 Self::CreateCommonNFT(receipt, price, max_amount, name, uri)
             }
             _ => return Err(VoilaError::InstructionUnpackError.into()),
@@ -72,13 +68,13 @@ impl VoilaInstruction {
                 buf.extend_from_slice(&price.to_le_bytes());
                 buf.extend_from_slice(&max_amount.to_le_bytes());
 
-                let mut data = name.try_to_vec().expect("name is valid utf8");
-                data.resize(NAME_LEN, 0xFF);
-                buf.extend(data);
-                
-                let mut data = uri.try_to_vec().expect("uri is valid utf8");
-                data.resize(URL_LEN, 0xFF);
-                buf.extend(data);
+                let name_data = name.as_bytes();
+                buf.push(name_data.len() as u8);
+                buf.extend_from_slice(name_data);
+
+                let uri_data = uri.as_bytes();
+                buf.push(uri_data.len() as u8);
+                buf.extend_from_slice(uri_data);
             }
         }
 
@@ -95,15 +91,14 @@ impl VoilaInstruction {
         Ok((pk, rest))
     }
 
-    fn unpack_string<const LEN: usize>(input: &[u8]) -> Result<(String, &[u8]), ProgramError> {
-        if input.len() < LEN {
+    fn unpack_string(input: &[u8]) -> Result<(String, &[u8]), ProgramError> {
+        let (len, rest) = input.split_first().ok_or_else(|| {
             msg!("String cannot be unpacked");
-            return Err(VoilaError::InstructionUnpackError.into());
-        }
-        let (data, rest) = input.split_at(LEN);
-        let s = String::try_from_slice(data)?;
-
-        msg!("test: {}", s);
+            VoilaError::InstructionUnpackError
+        })?;
+        let (data, rest) = rest.split_at(*len as usize);
+        let s = String::from_utf8(data.to_vec())
+            .map_err(|_| VoilaError::InstructionUnpackError)?;
 
         Ok((s, rest))
     }
