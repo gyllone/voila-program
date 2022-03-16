@@ -11,7 +11,7 @@ pub mod processor;
 
 pub use solana_program;
 
-solana_program::declare_id!("SF1EUyhLKzxaDtV7zHMtuVXpaqsmDB8GEkNuH2235tf");
+solana_program::declare_id!("9M9mU2tt5TByh9qkgowiYvu4csN4XiCHUg5qjm826p21");
 
 use borsh::{BorshSerialize, BorshDeserialize};
 use solana_program::{
