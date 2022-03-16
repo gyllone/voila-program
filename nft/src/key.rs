@@ -71,5 +71,5 @@ impl IsInitialized for UserKeyRecord {
 }
 
 impl Packer for UserKeyRecord {
-    const LEN: usize = 1 + 8 + 8;
+    const LEN: usize = 1 + 32 + 8 + 8;
 }
