@@ -9,6 +9,26 @@ use solana_program::{
     program::{invoke, invoke_signed},
 };
 
+pub fn process_transfer<'a>(
+    from_info: &AccountInfo<'a>,
+    to_info: &AccountInfo<'a>,
+    lamports: u64,
+    signer_seeds: &[&[u8]],
+) -> ProgramResult {
+    invoke_optionally_signed(
+        &system_instruction::transfer(
+            &from_info.key,
+            &to_info.key,
+            lamports,
+        ),
+        &[
+            from_info.clone(),
+            to_info.clone(),
+        ],
+        signer_seeds,
+    )
+}
+
 #[inline(never)]
 pub fn process_optimal_create_account<'a>(
     rent_info: &AccountInfo<'a>,

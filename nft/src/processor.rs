@@ -8,7 +8,7 @@ use solana_program::{
 };
 
 use crate::{
-    invoker::process_optimal_create_account,
+    invoker::{process_optimal_create_account, process_transfer},
     nft::CommonNFTInfo,
     key::{KeyInfo, UserKeyRecord},
     Packer,
@@ -105,14 +105,7 @@ fn process_purchase_key(
     }
 
     // pay for key
-    **receipt_info.lamports.borrow_mut() = receipt_info
-        .lamports()
-        .checked_add(ki.price)
-        .ok_or(VoilaError::MathOverflow)?;
-    **user_authority_info.lamports.borrow_mut() = user_authority_info
-        .lamports()
-        .checked_sub(ki.price)
-        .ok_or(VoilaError::MathOverflow)?;
+    process_transfer(user_authority_info, receipt_info, ki.price, &[])?;
 
     process_optimal_create_account(
         rent_info,
@@ -221,14 +214,7 @@ fn process_purchase_common_nft(
     }
 
     // pay for nft
-    **receipt_info.lamports.borrow_mut() = receipt_info
-        .lamports()
-        .checked_add(nft_info.price)
-        .ok_or(VoilaError::MathOverflow)?;
-    **user_authority_info.lamports.borrow_mut() = user_authority_info
-        .lamports()
-        .checked_sub(nft_info.price)
-        .ok_or(VoilaError::MathOverflow)?;
+    process_transfer(user_authority_info, receipt_info, nft_info.price, &[])?;
 
     process_init_token_mint(
         rent_info,
