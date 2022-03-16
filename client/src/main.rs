@@ -23,8 +23,21 @@ fn main() {
 
     // let tx = transaction::do_create_key_info(&admin, admin.pubkey(), 33300000, blockhash);
 
-    let tx = transaction::do_purchase_key(&user, KEY_PUBKEY, admin.pubkey(), blockhash);
+    // let tx = transaction::do_purchase_key(&user, KEY_PUBKEY, admin.pubkey(), blockhash);
 
-    let sig = client.send_and_confirm_transaction(&tx).unwrap();
-    println!("sig {}", sig);
+    let tx = transaction::do_create_common_nft(
+        &admin,
+        admin.pubkey(),
+        9900000000,
+        205,
+        "Primary".to_string(),
+        "https://voila.com".to_string(),
+        blockhash,
+    );
+
+    // let sig = client.send_and_confirm_transaction(&tx).unwrap();
+    // println!("sig {}", sig);
+
+    let res = client.simulate_transaction(&tx).unwrap();
+    println!("{:?}", res.value);
 }

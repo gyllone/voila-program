@@ -12,7 +12,8 @@ use spl_associated_token_account::get_associated_token_address;
 
 use crate::{error::VoilaError, pda::*, ID};
 
-const INSTRUCTION_LEN: usize = 32 + 8 + 2 + 64 + 64;
+const NAME_LEN: usize = 16;
+const URL_LEN: usize = 64;
 
 #[derive(Debug, PartialEq)]
 pub enum VoilaInstruction {
@@ -45,8 +46,8 @@ impl VoilaInstruction {
                 let (receipt, rest) = Self::unpack_pubkey(rest)?;
                 let (price, rest) = Self::unpack_u64(rest)?;
                 let (max_amount, rest) = Self::unpack_u16(rest)?;
-                let (name, rest) = Self::unpack_string(rest)?;
-                let (uri, _rest) = Self::unpack_string(rest)?;
+                let (name, rest) = Self::unpack_string::<NAME_LEN>(rest)?;
+                let (uri, _rest) = Self::unpack_string::<URL_LEN>(rest)?;
                 Self::CreateCommonNFT(receipt, price, max_amount, name, uri)
             }
             _ => return Err(VoilaError::InstructionUnpackError.into()),
@@ -54,7 +55,7 @@ impl VoilaInstruction {
     }
 
     pub fn pack(self) -> Vec<u8> {
-        let mut buf = Vec::with_capacity(INSTRUCTION_LEN);
+        let mut buf = Vec::new();
         match self {
             Self::PurchaseKey => buf.push(0),
             Self::PurchaseCommonNFT => buf.push(1),
@@ -72,12 +73,14 @@ impl VoilaInstruction {
                 buf.extend_from_slice(&max_amount.to_le_bytes());
 
                 let mut data = name.try_to_vec().expect("name is valid utf8");
-                data.resize(64, 0);
+                data.resize(NAME_LEN, 0);
                 buf.extend(data);
                 
                 let mut data = uri.try_to_vec().expect("uri is valid utf8");
-                data.resize(64, 0);
+                data.resize(URL_LEN, 0);
                 buf.extend(data);
+
+                println!("{}", buf.len());
             }
         }
 
@@ -94,13 +97,13 @@ impl VoilaInstruction {
         Ok((pk, rest))
     }
 
-    fn unpack_string(input: &[u8]) -> Result<(String, &[u8]), ProgramError> {
-        if input.len() < 64 {
+    fn unpack_string<const LEN: usize>(input: &[u8]) -> Result<(String, &[u8]), ProgramError> {
+        if input.len() < LEN {
             msg!("String cannot be unpacked");
             return Err(VoilaError::InstructionUnpackError.into());
         }
-        let (string, rest) = input.split_at(64);
-        let s = String::try_from_slice(string)?;
+        let (data, rest) = input.split_at(LEN);
+        let s = String::try_from_slice(data)?;
         Ok((s, rest))
     }
 
