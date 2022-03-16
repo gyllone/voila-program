@@ -57,6 +57,8 @@ fn process_create_key_info(
         return Err(VoilaError::InvalidPdaPubkey.into()); 
     }
 
+    msg!("Create key info, price = {}", price);
+
     process_optimal_create_account(
         rent_info,
         key_info,
@@ -150,6 +152,8 @@ fn process_create_common_nft(
         msg!("Common NFT info pubkey is an invalid pda pubkey");
         return Err(VoilaError::InvalidPdaPubkey.into()); 
     }
+
+    msg!("Create common NFT info, price = {}, max amount = {}, name = {}, uri = {}", price, max_amount, name, uri);
 
     process_optimal_create_account(
         rent_info,
