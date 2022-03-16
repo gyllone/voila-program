@@ -1,4 +1,4 @@
 /.idea
 /.vscode
-/nft/target
-/nft/Cargo.lock
+*target
+*Cargo.lock
