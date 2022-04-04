@@ -4,3 +4,5 @@
 /nft/Cargo.lock
 /client/target
 /client/Cargo.lock
+/wasm/target
+/wasm/Cargo.lock

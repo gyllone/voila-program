@@ -2,7 +2,7 @@ mod transaction;
 
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
-use solana_sdk::{signature::Keypair, signer::Signer, commitment_config::{CommitmentConfig, CommitmentLevel}, pubkey};
+use solana_sdk::{signature::Keypair, commitment_config::{CommitmentConfig, CommitmentLevel}, pubkey, signer::Signer};
 
 const DEVNET: &str = "https://api.devnet.solana.com";
 const MAINNET: &str = "https://api.mainnet-beta.solana.com";
@@ -11,6 +11,7 @@ const USER_KEYPAIR: &str = "25VtdefYWzk4fvyfAg3RzSrhwmy4HhgPyYcxetmHRmPrkCsDqSJw
 const ADMIN_KEYPAIR: &str = "pEyHAq7jGET5KcmTw4Rh4kPu7Auec6Nc16TRzoXuZyGXVyqD41zqh2WRBjq9fSKChszMS5iHa1m14mFhpmu1LfM";
 
 const KEY_PUBKEY: Pubkey = pubkey!("3jTDEb5b21xGED9mdrpU2ipf2RqrF73ZXsBfW3ombe5A");
+const COMMON_NFT_PUBKEY: Pubkey = pubkey!("SH6YNRpuQsn6S7imChn9t7yJjBy9WnTofr2bMSpwUBs");
 
 fn main() {
     let client = RpcClient::new_with_commitment(DEVNET, CommitmentConfig {
@@ -25,19 +26,27 @@ fn main() {
 
     // let tx = transaction::do_purchase_key(&user, KEY_PUBKEY, admin.pubkey(), blockhash);
 
-    let tx = transaction::do_create_common_nft(
-        &admin,
+    // let tx = transaction::do_create_common_nft(
+    //     &admin,
+    //     admin.pubkey(),
+    //     9900000000,
+    //     205,
+    //     "Primary".to_string(),
+    //     "https://voila.com".to_string(),
+    //     blockhash,
+    // );
+
+    let tx = transaction::do_purchase_common_nft(
+        &user,
+        COMMON_NFT_PUBKEY,
         admin.pubkey(),
-        9900000000,
-        205,
-        "Primary".to_string(),
-        "https://voila.com".to_string(),
+        0,
         blockhash,
     );
 
-    // let sig = client.send_and_confirm_transaction(&tx).unwrap();
-    // println!("sig {}", sig);
+    let sig = client.send_and_confirm_transaction(&tx).unwrap();
+    println!("sig {}", sig);
 
-    let res = client.simulate_transaction(&tx).unwrap();
-    println!("{:?}", res.value);
+    // let res = client.simulate_transaction(&tx).unwrap();
+    // println!("{:?}", res.value);
 }
