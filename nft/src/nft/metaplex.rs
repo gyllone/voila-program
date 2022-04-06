@@ -1,6 +1,6 @@
 use metaplex_token_metadata::state::Data;
-use solana_program::{entrypoint::ProgramResult, account_info::AccountInfo, pubkey::Pubkey};
 use metaplex_token_metadata::instruction::{create_metadata_accounts, create_master_edition};
+use solana_program::{entrypoint::ProgramResult, account_info::AccountInfo, pubkey::Pubkey};
 
 use crate::invoker::invoke_optionally_signed;
 
