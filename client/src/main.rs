@@ -40,7 +40,7 @@ fn main() {
         &user,
         COMMON_NFT_PUBKEY,
         admin.pubkey(),
-        0,
+        5,
         blockhash,
     );
 

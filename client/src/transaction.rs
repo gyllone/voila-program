@@ -1,5 +1,6 @@
 use solana_program::{pubkey::Pubkey, hash::Hash};
 use solana_sdk::{signature::Keypair, transaction::Transaction, signer::Signer};
+use voila_nft::pda::get_common_nft_mint_pda;
 
 pub fn do_create_key_info(
     admin_authority: &Keypair,
@@ -74,6 +75,8 @@ pub fn do_purchase_common_nft(
     nft_id: u16,
     blockhash: Hash,
 ) -> Transaction {
+    let (nft_mint, _, _, _) = get_common_nft_mint_pda(&nft_info, nft_id, &voila_nft::ID);
+
     Transaction::new_signed_with_payer(
         &[
             voila_nft::instruction::purchase_common_nft(
@@ -81,6 +84,11 @@ pub fn do_purchase_common_nft(
                 receipt,
                 user_authority.pubkey(),
                 nft_id,
+            ),
+            voila_nft::instruction::bind_common_nft_on_metaplex(
+                nft_info,
+                nft_mint,
+                user_authority.pubkey(),
             ),
         ],
         Some(&user_authority.pubkey()),
