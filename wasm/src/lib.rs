@@ -47,10 +47,12 @@ pub fn get_user_nft_tokens(owner: Pubkey, nft_tokens: Array) -> JsValue {
         .iter()
         .filter_map(|account| {
             let account = Uint8Array::from(account).to_vec();
-            let account = Account::unpack(&account).expect("token account can bot unpack");
-
-            if account.owner == owner {
-                Some(account.mint.to_string())
+            if let Ok(account) = Account::unpack(&account) {
+                if account.owner == owner {
+                    Some(account.mint.to_string())
+                } else {
+                    None
+                }
             } else {
                 None
             }
