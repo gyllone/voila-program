@@ -16,12 +16,14 @@ pub enum VoilaError {
     AlreadyInitialized,
     #[error("Accounts are not matched")]
     UnmatchedAccounts,
-    #[error("Deposit amount is too small")]
-    DepositTooSmall,
-    #[error("Pool deposit is disabled")]
-    PoolDepositDisabled,
     #[error("NFT is end of sale")]
     NFTEndOfSale,
+    #[error("NFT bid price is loo slow")]
+    InvalidBidPrice,
+    #[error("NFT can not bid now")]
+    InvalidBidTime,
+    #[error("NFT can not claim")]
+    NFTCannotClaim,
     #[error("Pda pubkey is invalid")]
     InvalidPdaPubkey,
     #[error("Invalid program id")]

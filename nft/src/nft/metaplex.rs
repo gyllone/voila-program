@@ -4,12 +4,28 @@ use solana_program::{entrypoint::ProgramResult, account_info::AccountInfo, pubke
 
 use crate::invoker::invoke_optionally_signed;
 
+use super::auction::NFTAuction;
 use super::{Meta, CommonNFTInfo};
 
 impl Meta<Data> for CommonNFTInfo {
     fn metadata(&self, _mint: &Pubkey) -> Data {
         let name = format!("{}", self.name);
         // let uri = format!("{}/{}", self.uri, mint.to_string());
+        let uri = "http://3.0.95.230/nft/3zhd2GY6Yx9VcY8krE2kc9heJFLdCcKdLV6BmcGLs9zn.png".to_string();
+
+        Data {
+            name,
+            symbol: "VNFT".to_string(),
+            uri,
+            seller_fee_basis_points: 0,
+            creators: None,
+        }
+    }
+}
+
+impl Meta<Data> for NFTAuction {
+    fn metadata(&self, _mint: &Pubkey) -> Data {
+        let name = format!("{}", self.name);
         let uri = "http://3.0.95.230/nft/3zhd2GY6Yx9VcY8krE2kc9heJFLdCcKdLV6BmcGLs9zn.png".to_string();
 
         Data {

@@ -5,7 +5,7 @@ use solana_program::{
     msg,
     instruction::{Instruction, AccountMeta},
     system_program,
-    sysvar,
+    sysvar, clock::UnixTimestamp,
 };
 use spl_associated_token_account::get_associated_token_address;
 
@@ -18,9 +18,15 @@ pub enum VoilaInstruction {
     PurchaseCommonNFT,
     #[cfg(feature = "metaplex")]
     BindCommonNFTOnMetaplex,
+    BidInNFTAuction(u64),
+    ClaimNFTFromAuction,
+    #[cfg(feature = "metaplex")]
+    BindAuctionNFTOnMetaplex,
     // 128 ~ admin
     CreateKeyInfo(Pubkey, u64),
     CreateCommonNFT(Pubkey, u64, u16, String, String),
+    CreateNFTAuction(u16, UnixTimestamp, UnixTimestamp, u64, u64, String, String),
+    WithdrawFromNFTAuction,
 }
 
 impl VoilaInstruction {
@@ -33,6 +39,13 @@ impl VoilaInstruction {
             1 => Self::PurchaseCommonNFT,
             #[cfg(feature = "metaplex")]
             2 => Self::BindCommonNFTOnMetaplex,
+            3 => {
+                let (raise_price, _rest) = Self::unpack_u64(rest)?;
+                Self::BidInNFTAuction(raise_price)
+            }
+            4 => Self::ClaimNFTFromAuction,
+            #[cfg(feature = "metaplex")]
+            5 => Self::BindAuctionNFTOnMetaplex,
             128 => {
                 let (receipt, rest) = Self::unpack_pubkey(rest)?;
                 let (price, _rest) = Self::unpack_u64(rest)?;
@@ -46,6 +59,17 @@ impl VoilaInstruction {
                 let (uri, _rest) = Self::unpack_string(rest)?;
                 Self::CreateCommonNFT(receipt, price, max_amount, name, uri)
             }
+            130 => {
+                let (sn, rest) = Self::unpack_u16(rest)?;
+                let (start_time, rest) = Self::unpack_i64(rest)?;
+                let (end_time, rest) = Self::unpack_i64(rest)?;
+                let (base_price, rest) = Self::unpack_u64(rest)?;
+                let (min_raise_price, rest) = Self::unpack_u64(rest)?;
+                let (name, rest) = Self::unpack_string(rest)?;
+                let (uri, _rest) = Self::unpack_string(rest)?;
+                Self::CreateNFTAuction(sn, start_time, end_time, base_price, min_raise_price, name, uri)
+            }
+            131 => Self::WithdrawFromNFTAuction,
             _ => return Err(VoilaError::InstructionUnpackError.into()),
         })
     }
@@ -57,6 +81,13 @@ impl VoilaInstruction {
             Self::PurchaseCommonNFT => buf.push(1),
             #[cfg(feature = "metaplex")]
             Self::BindCommonNFTOnMetaplex => buf.push(2),
+            Self::BidInNFTAuction(raise_price) => {
+                buf.push(3);
+                buf.extend(raise_price.to_le_bytes());
+            }
+            Self::ClaimNFTFromAuction => buf.push(4),
+            #[cfg(feature = "metaplex")]
+            Self::BindAuctionNFTOnMetaplex => buf.push(5),
             Self::CreateKeyInfo(receipt, price) => {
                 buf.push(128);
                 buf.extend_from_slice(&receipt.as_ref());
@@ -76,6 +107,31 @@ impl VoilaInstruction {
                 buf.push(uri_data.len() as u8);
                 buf.extend_from_slice(uri_data);
             }
+            Self::CreateNFTAuction(
+                sn,
+                start_time,
+                end_time,
+                base_price,
+                min_raise_price,
+                name,
+                uri,
+            ) => {
+                buf.push(130);
+                buf.extend_from_slice(&sn.to_le_bytes());
+                buf.extend_from_slice(&start_time.to_le_bytes());
+                buf.extend_from_slice(&end_time.to_le_bytes());
+                buf.extend_from_slice(&base_price.to_le_bytes());
+                buf.extend_from_slice(&min_raise_price.to_le_bytes());
+
+                let name_data = name.as_bytes();
+                buf.push(name_data.len() as u8);
+                buf.extend_from_slice(name_data);
+
+                let uri_data = uri.as_bytes();
+                buf.push(uri_data.len() as u8);
+                buf.extend_from_slice(uri_data);
+            }
+            Self::WithdrawFromNFTAuction => buf.push(131),
         }
 
         buf
@@ -113,6 +169,20 @@ impl VoilaInstruction {
             .get(..8)
             .and_then(|slice| slice.try_into().ok())
             .map(u64::from_le_bytes)
+            .ok_or(VoilaError::InstructionUnpackError)?;
+        Ok((amount, rest))
+    }
+
+    fn unpack_i64(input: &[u8]) -> Result<(i64, &[u8]), ProgramError> {
+        if input.len() < 8 {
+            msg!("i64 cannot be unpacked");
+            return Err(VoilaError::InstructionUnpackError.into());
+        }
+        let (amount, rest) = input.split_at(8);
+        let amount = amount
+            .get(..8)
+            .and_then(|slice| slice.try_into().ok())
+            .map(i64::from_le_bytes)
             .ok_or(VoilaError::InstructionUnpackError)?;
         Ok((amount, rest))
     }
@@ -251,5 +321,109 @@ pub fn bind_common_nft_on_metaplex(
             AccountMeta::new(user_authority, true),
         ],
         data: VoilaInstruction::BindCommonNFTOnMetaplex.pack(),
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn create_nft_auction(
+    admin_authority: Pubkey,
+    sn: u16,
+    start_time: UnixTimestamp,
+    end_time: UnixTimestamp,
+    base_price: u64,
+    min_raise_price: u64,
+    name: String,
+    uri: String,
+) -> Instruction {
+    let (nft_auction, _, _, _, _)
+    = get_nft_auction_pda(&admin_authority, sn, &ID);
+
+    Instruction {
+        program_id: ID,
+        accounts: vec![
+            AccountMeta::new_readonly(sysvar::rent::ID, false),
+            AccountMeta::new_readonly(system_program::ID, false),
+            AccountMeta::new(nft_auction, false),
+            AccountMeta::new(admin_authority, true),
+        ],
+        data: VoilaInstruction::CreateNFTAuction(
+            sn,
+            start_time,
+            end_time,
+            base_price,
+            min_raise_price,
+            name,
+            uri,
+        ).pack(),
+    }
+}
+
+pub fn withdraw_from_nft_auction(
+    nft_auction: Pubkey,
+    admin: Pubkey,
+    receipt: Pubkey,
+) -> Instruction {
+    let (nft_auction_authority, _, _) = get_nft_auction_authority_pda(&nft_auction, &ID);
+
+    Instruction {
+        program_id: ID,
+        accounts: vec![
+            AccountMeta::new_readonly(nft_auction, false),
+            AccountMeta::new(nft_auction_authority, false),
+            AccountMeta::new_readonly(admin, true),
+            AccountMeta::new(receipt, false),
+        ],
+        data: VoilaInstruction::WithdrawFromNFTAuction.pack(),
+    }
+}
+
+pub fn bid_in_nft_auction(
+    nft_auction: Pubkey,
+    new_bidder: Pubkey,
+    old_bidder: Option<Pubkey>,
+    raise_price: u64,
+) -> Instruction {
+    let (nft_auction_authority, _, _) = get_nft_auction_authority_pda(&nft_auction, &ID);
+
+    let mut accounts = vec![
+        AccountMeta::new_readonly(sysvar::clock::ID, false),
+        AccountMeta::new(nft_auction, false),
+        AccountMeta::new(nft_auction_authority, false),
+        AccountMeta::new(new_bidder, true),
+    ];
+    if let Some(old_bidder) = old_bidder {
+        accounts.push(AccountMeta::new(old_bidder, false));
+    }
+
+    Instruction {
+        program_id: ID,
+        accounts,
+        data: VoilaInstruction::BidInNFTAuction(raise_price).pack(),
+    }
+}
+
+pub fn claim_from_nft_auction(
+    nft_auction: Pubkey,
+    owner: Pubkey,
+) -> Instruction {
+    let (nft_auction_authority, _, _) = get_nft_auction_authority_pda(&nft_auction, &ID);
+    let (nft_mint, _, _) = get_auction_nft_mint_pda(&nft_auction_authority, &ID);
+    let nft_account = get_associated_token_address(&owner, &nft_mint);
+
+    Instruction {
+        program_id: ID,
+        accounts: vec![
+            AccountMeta::new_readonly(sysvar::clock::ID, false),
+            AccountMeta::new_readonly(sysvar::rent::ID, false),
+            AccountMeta::new_readonly(system_program::ID, false),
+            AccountMeta::new_readonly(spl_token::ID, false),
+            AccountMeta::new_readonly(spl_associated_token_account::ID, false),
+            AccountMeta::new(nft_auction, false),
+            AccountMeta::new_readonly(nft_auction_authority, false),
+            AccountMeta::new(owner, true),
+            AccountMeta::new(nft_mint, false),
+            AccountMeta::new(nft_account, false),
+        ],
+        data: VoilaInstruction::ClaimNFTFromAuction.pack(),
     }
 }

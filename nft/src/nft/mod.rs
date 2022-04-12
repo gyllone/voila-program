@@ -1,5 +1,6 @@
 #[cfg(feature = "metaplex")]
 pub mod metaplex;
+pub mod auction;
 
 use borsh::{BorshSerialize, BorshDeserialize};
 use serde::{Serialize, Deserialize};

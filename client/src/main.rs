@@ -11,7 +11,9 @@ const USER_KEYPAIR: &str = "25VtdefYWzk4fvyfAg3RzSrhwmy4HhgPyYcxetmHRmPrkCsDqSJw
 const ADMIN_KEYPAIR: &str = "pEyHAq7jGET5KcmTw4Rh4kPu7Auec6Nc16TRzoXuZyGXVyqD41zqh2WRBjq9fSKChszMS5iHa1m14mFhpmu1LfM";
 
 const KEY_PUBKEY: Pubkey = pubkey!("3jTDEb5b21xGED9mdrpU2ipf2RqrF73ZXsBfW3ombe5A");
-const COMMON_NFT_PUBKEY: Pubkey = pubkey!("SH6YNRpuQsn6S7imChn9t7yJjBy9WnTofr2bMSpwUBs");
+const COMMON_NFT_PUBKEY: Pubkey = pubkey!("SH6YNRpuQsn6S7imChn9t7yJjBy9WnTofr2bMSpwUBs"); 
+const COMMON_PRIMARY: Pubkey = pubkey!("vskpF4rYHp36N8uyuq5WTFA8peZUTfAxYXFyHvxK6Cy");
+const COMMON_SENIOR: Pubkey = pubkey!("3jDyTJHfYAS9WEhju774esX92urm4tWT5HhQ6qwsAjY9");
 
 fn main() {
     let client = RpcClient::new_with_commitment(DEVNET, CommitmentConfig {
@@ -29,20 +31,30 @@ fn main() {
     // let tx = transaction::do_create_common_nft(
     //     &admin,
     //     admin.pubkey(),
-    //     9900000000,
+    //     110000000,
     //     205,
-    //     "Primary".to_string(),
+    //     "primary".to_string(),
     //     "https://voila.com".to_string(),
     //     blockhash,
     // );
 
-    let tx = transaction::do_purchase_common_nft(
-        &user,
-        COMMON_NFT_PUBKEY,
+    let tx = transaction::do_create_common_nft(
+        &admin,
         admin.pubkey(),
-        5,
+        990000000,
+        100,
+        "senior".to_string(),
+        "https://voila.com".to_string(),
         blockhash,
     );
+
+    // let tx = transaction::do_purchase_common_nft(
+    //     &user,
+    //     COMMON_NFT_PUBKEY,
+    //     admin.pubkey(),
+    //     5,
+    //     blockhash,
+    // );
 
     let sig = client.send_and_confirm_transaction(&tx).unwrap();
     println!("sig {}", sig);

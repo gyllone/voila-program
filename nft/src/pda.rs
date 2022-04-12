@@ -2,6 +2,7 @@ use solana_program::pubkey::Pubkey;
 
 const KEY_IDENTIFIER: &[u8] = "key".as_bytes();
 const COMMON_NFT_IDENTIFIER: &[u8] = "commonnft".as_bytes();
+const NFT_AUCTION_IDENTIFIER: &[u8] = "auction".as_bytes();
 
 #[inline]
 pub fn get_key_info_pda<'a>(
@@ -84,21 +85,49 @@ pub fn get_common_nft_mint_pda<'a>(
     (key, common_nft_ref, id_array, [seed])
 }
 
-// #[inline]
-// pub fn get_common_nft_mint_pda_by_seed(
-//     common_nft: &Pubkey,
-//     id: u16,
-//     seed: [u8; 1],
-//     program_id: &Pubkey,
-// ) -> Result<Pubkey, ProgramError> {
-//     let key = Pubkey::create_program_address(
-//         &[
-//             common_nft.as_ref(),
-//             &id.to_le_bytes(),
-//             &seed,
-//         ],
-//         program_id,
-//     )?;
+#[inline]
+pub fn get_nft_auction_pda<'a>(
+    admin_authority: &'a Pubkey,
+    sn: u16,
+    program_id: &Pubkey,
+) -> (Pubkey, &'a [u8], &'a [u8], [u8; 2], [u8; 1]) {
+    let admin_authority_ref = admin_authority.as_ref();
+    let sn_array = sn.to_le_bytes();
 
-//     Ok(key)
-// }
+    let (key, seed) = Pubkey::find_program_address(
+        &[NFT_AUCTION_IDENTIFIER, admin_authority_ref, &sn_array],
+        program_id,
+    );
+
+    (key, NFT_AUCTION_IDENTIFIER, admin_authority_ref, sn_array, [seed])
+}
+
+#[inline]
+pub fn get_nft_auction_authority_pda<'a>(
+    nft_auction: &'a Pubkey,
+    program_id: &Pubkey,
+) -> (Pubkey, &'a [u8], [u8; 1]) {
+    let nft_auction_ref = nft_auction.as_ref();
+
+    let (key, seed) = Pubkey::find_program_address(
+        &[nft_auction_ref],
+        program_id,
+    );
+
+    (key, nft_auction_ref, [seed])
+}
+
+#[inline]
+pub fn get_auction_nft_mint_pda<'a>(
+    authority: &'a Pubkey,
+    program_id: &Pubkey,
+) -> (Pubkey, &'a [u8], [u8; 1]) {
+    let authority_ref = authority.as_ref();
+
+    let (key, seed) = Pubkey::find_program_address(
+        &[authority_ref],
+        program_id,
+    );
+
+    (key, authority_ref, [seed])
+}
