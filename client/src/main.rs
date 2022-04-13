@@ -1,8 +1,11 @@
 mod transaction;
 
+use std::str::FromStr;
+
 use solana_client::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::{signature::Keypair, commitment_config::{CommitmentConfig, CommitmentLevel}, pubkey, signer::Signer};
+use voila_nft::{nft::auction::NFTAuction, Packer};
 
 const DEVNET: &str = "https://api.devnet.solana.com";
 const MAINNET: &str = "https://api.mainnet-beta.solana.com";
@@ -38,15 +41,31 @@ fn main() {
     //     blockhash,
     // );
 
-    let tx = transaction::do_create_common_nft(
-        &admin,
-        admin.pubkey(),
-        990000000,
-        100,
-        "senior".to_string(),
-        "https://voila.com".to_string(),
-        blockhash,
-    );
+    // let tx = transaction::do_create_common_nft(
+    //     &admin,
+    //     admin.pubkey(),
+    //     990000000,
+    //     100,
+    //     "senior".to_string(),
+    //     "https://voila.com".to_string(),
+    //     blockhash,
+    // );
+
+    // let tx = transaction::do_create_nft_auction(
+    //     &admin,
+    //     0,
+    //     1649908800,
+    //     1649980800,
+    //     1_000_000_000,
+    //     100_000_000,
+    //     "auction".to_string(),
+    //     "https://voila.com".to_string(),
+    //     blockhash,
+    // );
+
+    let data = client.get_account_data(&Pubkey::from_str("3bdbCUutGggQA3EL88nHyrCWKtpPefMxvarZdL4WGe4m").unwrap()).unwrap();
+    let auction = NFTAuction::unpack(&data).unwrap();
+    println!("{:?}", auction.pda_authority);
 
     // let tx = transaction::do_purchase_common_nft(
     //     &user,
@@ -56,8 +75,8 @@ fn main() {
     //     blockhash,
     // );
 
-    let sig = client.send_and_confirm_transaction(&tx).unwrap();
-    println!("sig {}", sig);
+    // let sig = client.send_and_confirm_transaction(&tx).unwrap();
+    // println!("sig {}", sig);
 
     // let res = client.simulate_transaction(&tx).unwrap();
     // println!("{:?}", res.value);

@@ -4,7 +4,7 @@ use js_sys::{Uint8Array, Array};
 use solana_program::{program_pack::Pack, pubkey::Pubkey};
 use spl_token::state::Account;
 use wasm_bindgen::{JsValue, prelude::*};
-use voila_nft::{Packer, key::{KeyInfo, UserKeyRecord}, nft::CommonNFTInfo};
+use voila_nft::{Packer, key::{KeyInfo, UserKeyRecord}, nft::{CommonNFTInfo, auction::NFTAuction}};
 
 #[wasm_bindgen]
 pub fn get_key_info(key_info_data: Uint8Array) -> JsValue {
@@ -37,6 +37,17 @@ pub fn get_common_nft_info(common_nft_data: Uint8Array) -> JsValue {
         .expect("common nft data can not unpack");
 
     JsValue::from_serde(&common_nft).expect("serde serialize")
+}
+
+#[wasm_bindgen]
+pub fn get_nft_auction(nft_auction_data: Uint8Array) -> JsValue {
+    console_error_panic_hook::set_once();
+
+    let nft_auction_data = nft_auction_data.to_vec();
+    let nft_auction = NFTAuction::unpack(&nft_auction_data)
+        .expect("nft auction data can not unpack");
+
+    JsValue::from_serde(&nft_auction).expect("serde serialize")
 }
 
 #[wasm_bindgen]

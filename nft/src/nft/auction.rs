@@ -1,9 +1,10 @@
 use borsh::{BorshSerialize, BorshDeserialize};
+use serde::{Serialize, Deserialize};
 use solana_program::{msg, pubkey::Pubkey, clock::UnixTimestamp, program_error::ProgramError, program_pack::IsInitialized, entrypoint::ProgramResult};
 
 use crate::{pda::get_nft_auction_authority_pda, error::VoilaError, Packer};
 
-#[derive(Clone, BorshSerialize, BorshDeserialize)]
+#[derive(Clone, BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
 pub struct NFTAuction {
     pub is_initialized: bool,
     pub admin: Pubkey,

@@ -427,3 +427,33 @@ pub fn claim_from_nft_auction(
         data: VoilaInstruction::ClaimNFTFromAuction.pack(),
     }
 }
+
+#[cfg(feature = "metaplex")]
+pub fn bind_auction_nft_on_metaplex(
+    nft_auction: Pubkey,
+    nft_mint: Pubkey,
+    user_authority: Pubkey,
+) -> Instruction {
+    use crate::nft::metaplex::{get_metaplex_metadata_account, get_metaplex_master_edition};
+
+    let (nft_auction_authority, _, _) = get_nft_auction_authority_pda(&nft_auction, &ID);
+    let metadata = get_metaplex_metadata_account(&metaplex_token_metadata::ID, &nft_mint);
+    let master_edition = get_metaplex_master_edition(&metaplex_token_metadata::ID, &nft_mint);
+
+    Instruction {
+        program_id: ID,
+        accounts: vec![
+            AccountMeta::new_readonly(sysvar::rent::ID, false),
+            AccountMeta::new_readonly(system_program::ID, false),
+            AccountMeta::new_readonly(spl_token::ID, false),
+            AccountMeta::new_readonly(metaplex_token_metadata::ID, false),
+            AccountMeta::new_readonly(nft_auction, false),
+            AccountMeta::new_readonly(nft_auction_authority, false),
+            AccountMeta::new(nft_mint, false),
+            AccountMeta::new(metadata, false),
+            AccountMeta::new(master_edition, false),
+            AccountMeta::new(user_authority, true),
+        ],
+        data: VoilaInstruction::BindAuctionNFTOnMetaplex.pack(),
+    }
+}

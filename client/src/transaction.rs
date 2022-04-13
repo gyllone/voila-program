@@ -22,6 +22,36 @@ pub fn do_create_key_info(
     )
 }
 
+pub fn do_create_nft_auction(
+    admin_authority: &Keypair,
+    sn: u16,
+    start_time: i64,
+    end_time: i64,
+    base_price: u64,
+    price_raise: u64,
+    name: String,
+    uri: String,
+    blockhash: Hash,
+) -> Transaction {
+    Transaction::new_signed_with_payer(
+        &[
+            voila_nft::instruction::create_nft_auction(
+                admin_authority.pubkey(),
+                sn,
+                start_time,
+                end_time,
+                base_price,
+                price_raise,
+                name,
+                uri,
+            ),
+        ],
+        Some(&admin_authority.pubkey()),
+        &[admin_authority],
+        blockhash,
+    )
+}
+
 pub fn do_create_common_nft(
     admin_authority: &Keypair,
     receipt: Pubkey,
