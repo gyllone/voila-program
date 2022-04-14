@@ -384,12 +384,12 @@ fn process_create_auction_nft(
 
 #[inline(never)]
 fn process_withdraw_from_nft_auction(accounts: &[AccountInfo]) -> ProgramResult {
-    let accounts_info_iter = &mut accounts.iter();
+    let account_info_iter = &mut accounts.iter();
 
-    let nft_auction_info = next_account_info(accounts_info_iter)?;
-    let nft_auction_authority_info = next_account_info(accounts_info_iter)?;
-    let admin_info = next_account_info(accounts_info_iter)?;
-    let receipt_info = next_account_info(accounts_info_iter)?;
+    let nft_auction_info = next_account_info(account_info_iter)?;
+    let nft_auction_authority_info = next_account_info(account_info_iter)?;
+    let admin_info = next_account_info(account_info_iter)?;
+    let receipt_info = next_account_info(account_info_iter)?;
 
     let nft_auction = NFTAuction::unpack(&nft_auction_info.try_borrow_data()?)?;
     if nft_auction_authority_info.key != &nft_auction.pda_authority {
@@ -418,34 +418,24 @@ fn process_withdraw_from_nft_auction(accounts: &[AccountInfo]) -> ProgramResult 
 
 #[inline(never)]
 fn process_bid_in_nft_auction(accounts: &[AccountInfo], raise_price: u64) -> ProgramResult {
-    let accounts_info_iter = &mut accounts.iter();
+    let account_info_iter = &mut accounts.iter();
 
-    let clock = Clock::from_account_info(next_account_info(accounts_info_iter)?)?;
-    let nft_auction_info = next_account_info(accounts_info_iter)?;
-    let nft_auction_authority_info = next_account_info(accounts_info_iter)?;
-    let new_bidder_info = next_account_info(accounts_info_iter)?;
+    let clock = Clock::from_account_info(next_account_info(account_info_iter)?)?;
+    let nft_auction_info = next_account_info(account_info_iter)?;
+    let nft_auction_authority_info = next_account_info(account_info_iter)?;
+    let new_bidder_info = next_account_info(account_info_iter)?;
 
     let mut nft_auction = NFTAuction::unpack(&nft_auction_info.try_borrow_data()?)?;
     if nft_auction_authority_info.key != &nft_auction.pda_authority {
         msg!("NFT auction authority is not matched with provided");
         return Err(VoilaError::UnmatchedAccounts.into());
     }
-
-    let (last_bidder, refund)
-        = nft_auction.bid(raise_price, clock.unix_timestamp, *new_bidder_info.key)?;
-
-    // pay to auction
-    process_transfer(
-        new_bidder_info,
-        nft_auction_authority_info,
-        nft_auction.last_price,
-        &[],
-    )?;
+    let last_bid_info= nft_auction.bid(raise_price, clock.unix_timestamp, *new_bidder_info.key)?;
 
     // refund
-    if let Some(last_bidder) = last_bidder {
-        let last_bidder_info = next_account_info(accounts_info_iter)?;
-        if last_bidder_info.key != &last_bidder {
+    if let Some(last_bid_info) = last_bid_info {
+        let last_bidder_info = next_account_info(account_info_iter)?;
+        if last_bidder_info.key != &last_bid_info.bidder {
             msg!("Last bidder is not matched with provided");
             return Err(VoilaError::UnmatchedAccounts.into());
         }
@@ -453,37 +443,44 @@ fn process_bid_in_nft_auction(accounts: &[AccountInfo], raise_price: u64) -> Pro
         process_transfer(
             nft_auction_authority_info,
             last_bidder_info,
-            refund,
+            last_bid_info.price,
             &nft_auction.authority_signer_seeds(nft_auction_info.key),
         )?;
     }
+
+    // pay to auction
+    process_transfer(
+        new_bidder_info,
+        nft_auction_authority_info,
+        nft_auction.current_bid_info.as_ref().unwrap().price,
+        &[],
+    )?;
 
     nft_auction.pack(&mut nft_auction_info.try_borrow_mut_data()?)
 }
 
 fn process_claim_nft_from_auction(program_id: &Pubkey, accounts: &[AccountInfo]) -> ProgramResult {
-    let accounts_info_iter = &mut accounts.iter();
+    let account_info_iter = &mut accounts.iter();
 
-    let clock = Clock::from_account_info(next_account_info(accounts_info_iter)?)?;
-    let rent_info = next_account_info(accounts_info_iter)?;
-    let system_program_info = next_account_info(accounts_info_iter)?;
-    let token_program_info = next_account_info(accounts_info_iter)?;
-    let spl_associated_program_info = next_account_info(accounts_info_iter)?;
-    let nft_auction_info = next_account_info(accounts_info_iter)?;
-    let nft_auction_authority_info = next_account_info(accounts_info_iter)?;
-    let owner_info = next_account_info(accounts_info_iter)?;
-    let nft_mint_info = next_account_info(accounts_info_iter)?;
-    let nft_account_info = next_account_info(accounts_info_iter)?;
+    let clock = Clock::from_account_info(next_account_info(account_info_iter)?)?;
+    let rent_info = next_account_info(account_info_iter)?;
+    let system_program_info = next_account_info(account_info_iter)?;
+    let token_program_info = next_account_info(account_info_iter)?;
+    let spl_associated_program_info = next_account_info(account_info_iter)?;
+    let nft_auction_info = next_account_info(account_info_iter)?;
+    let nft_auction_authority_info = next_account_info(account_info_iter)?;
+    let owner_info = next_account_info(account_info_iter)?;
+    let nft_mint_info = next_account_info(account_info_iter)?;
+    let nft_account_info = next_account_info(account_info_iter)?;
 
     let mut nft_auction = NFTAuction::unpack(&nft_auction_info.try_borrow_data()?)?;
     if nft_auction_authority_info.key != &nft_auction.pda_authority {
         msg!("NFT auction authority is not matched with provided");
         return Err(VoilaError::UnmatchedAccounts.into());
     }
-
     nft_auction.claim(clock.unix_timestamp, owner_info.key)?;
 
-    msg!("Claim NFT from acution, name = {}, price = {}", nft_auction.name, nft_auction.last_price);
+    msg!("Claim NFT from acution, name = {}", nft_auction.name);
 
     let (key, seed_1, ref seed_2)
         = get_auction_nft_mint_pda(nft_auction_authority_info.key, program_id);

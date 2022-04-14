@@ -4,6 +4,15 @@ use solana_program::{msg, pubkey::Pubkey, clock::UnixTimestamp, program_error::P
 
 use crate::{pda::get_nft_auction_authority_pda, error::VoilaError, Packer};
 
+const PREVIOUS_BIDDERS_LEN: usize = 6;
+
+#[derive(Clone, Copy, BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
+pub struct BidInfo {
+    pub bidder: Pubkey,
+    pub price: u64,
+    pub timestamp: UnixTimestamp,
+}
+
 #[derive(Clone, BorshSerialize, BorshDeserialize, Serialize, Deserialize)]
 pub struct NFTAuction {
     pub is_initialized: bool,
@@ -14,8 +23,8 @@ pub struct NFTAuction {
     pub end_time: UnixTimestamp,
     pub base_price: u64,
     pub min_raise_price: u64,
-    pub last_price: u64,
-    pub bidder: Option<Pubkey>,
+    pub current_bid_info: Option<BidInfo>,
+    pub previous_bid_infos: Vec<BidInfo>,
     pub claimed: bool,
     pub name: String,
     pub uri: String,
@@ -46,8 +55,8 @@ impl NFTAuction {
             end_time,
             base_price,
             min_raise_price,
-            last_price: base_price,
-            bidder: None,
+            current_bid_info: None,
+            previous_bid_infos: Vec::new(),
             claimed: false,
             name,
             uri,
@@ -64,7 +73,7 @@ impl NFTAuction {
         raise_price: u64,
         timestamp: UnixTimestamp,
         bidder: Pubkey,
-    ) -> Result<(Option<Pubkey>, u64), ProgramError> {
+    ) -> Result<Option<BidInfo>, ProgramError> {
         if raise_price < self.min_raise_price {
             return Err(VoilaError::InvalidBidPrice.into());
         }
@@ -77,12 +86,29 @@ impl NFTAuction {
             return Err(VoilaError::InvalidBidTime.into());
         }
 
-        let refund = self.last_price;
-        self.last_price = self.last_price
-            .checked_add(raise_price)
-            .ok_or(VoilaError::MathOverflow)?;
+        let (last_bid_info, new_bid_info) = if let Some(last_bid_info) = self.current_bid_info {
+            self.previous_bid_infos.push(last_bid_info);
+            self.previous_bid_infos.truncate(PREVIOUS_BIDDERS_LEN);
 
-        Ok((self.bidder.replace(bidder), refund))
+            let new_bid_info = BidInfo {
+                bidder,
+                price: last_bid_info.price.checked_add(raise_price).ok_or(VoilaError::MathOverflow)?,
+                timestamp,
+            };
+
+            (Some(last_bid_info), new_bid_info)
+        } else {
+            let new_bid_info = BidInfo {
+                bidder,
+                price: self.base_price.checked_add(raise_price).ok_or(VoilaError::MathOverflow)?,
+                timestamp,
+            };
+
+            (None, new_bid_info)
+        };
+        self.current_bid_info = Some(new_bid_info);
+
+        Ok(last_bid_info)
     }
 
     pub fn claim(&mut self, timestamp: UnixTimestamp, owner: &Pubkey) -> ProgramResult {
@@ -91,8 +117,8 @@ impl NFTAuction {
             return Err(VoilaError::InvalidBidTime.into());
         }
 
-        if let Some(bidder) = &self.bidder {
-            if bidder == owner {
+        if let Some(bid_info) = &self.current_bid_info {
+            if &bid_info.bidder == owner {
                 self.claimed = true;
 
                 Ok(())
