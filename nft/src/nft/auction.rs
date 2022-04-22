@@ -140,5 +140,5 @@ impl IsInitialized for NFTAuction {
 }
 
 impl Packer for NFTAuction {
-    const LEN: usize = 256;
+    const LEN: usize = 512;
 }

@@ -53,9 +53,9 @@ fn main() {
 
     // let tx = transaction::do_create_nft_auction(
     //     &admin,
-    //     0,
-    //     1649908800,
-    //     1649980800,
+    //     1,
+    //     1650616200,
+    //     1650789000,
     //     1_000_000_000,
     //     100_000_000,
     //     "auction".to_string(),
@@ -63,7 +63,8 @@ fn main() {
     //     blockhash,
     // );
 
-    let data = client.get_account_data(&Pubkey::from_str("3bdbCUutGggQA3EL88nHyrCWKtpPefMxvarZdL4WGe4m").unwrap()).unwrap();
+    let data = client.get_account_data(&Pubkey::from_str("HiC9B13e7QW1VAGX4WBEmhySqVHnSHELfMMP7NfDzGSb").unwrap()).unwrap();
+    println!("{:?}", &data);
     let auction = NFTAuction::unpack(&data).unwrap();
     println!("{:?}", auction.pda_authority);
 
