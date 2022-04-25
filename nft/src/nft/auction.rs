@@ -87,7 +87,7 @@ impl NFTAuction {
         }
 
         let (last_bid_info, new_bid_info) = if let Some(last_bid_info) = self.current_bid_info {
-            self.previous_bid_infos.push(last_bid_info);
+            self.previous_bid_infos.insert(0, last_bid_info);
             self.previous_bid_infos.truncate(PREVIOUS_BIDDERS_LEN);
 
             let new_bid_info = BidInfo {
