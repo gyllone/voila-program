@@ -419,6 +419,8 @@ fn process_withdraw_from_nft_auction(accounts: &[AccountInfo]) -> ProgramResult 
         return Err(VoilaError::UnmatchedAccounts.into());
     }
 
+    msg!("Withdraw from NFT auction");
+
     process_transfer(
         nft_auction_authority_info,
         receipt_info,
@@ -447,6 +449,9 @@ fn process_bid_in_nft_auction(accounts: &[AccountInfo], raise_price: u64) -> Pro
     }
     let last_bid_info= nft_auction.bid(raise_price, clock.unix_timestamp, *new_bidder_info.key)?;
 
+    let latest_price = nft_auction.current_bid_info.as_ref().unwrap().price;
+    msg!("Bid in NFT auction, latest price: {}", latest_price);
+
     // refund
     if let Some(last_bid_info) = last_bid_info {
         let last_bidder_info = next_account_info(account_info_iter)?;
@@ -454,6 +459,8 @@ fn process_bid_in_nft_auction(accounts: &[AccountInfo], raise_price: u64) -> Pro
             msg!("Last bidder is not matched with provided");
             return Err(VoilaError::UnmatchedAccounts.into());
         }
+
+        msg!("Refund to last bidder: {}", last_bid_info.price);
 
         process_transfer(
             nft_auction_authority_info,
@@ -469,7 +476,7 @@ fn process_bid_in_nft_auction(accounts: &[AccountInfo], raise_price: u64) -> Pro
         new_bidder_info,
         nft_auction_authority_info,
         system_program_info,
-        nft_auction.current_bid_info.as_ref().unwrap().price,
+        latest_price,
         &[],
     )?;
 
@@ -560,7 +567,7 @@ fn process_bind_auction_nft_on_metaplex(accounts: &[AccountInfo]) -> ProgramResu
     use crate::nft::{metaplex::{process_invoke_metaplex_create_metadata_accounts, process_invoke_metaplex_create_master_edition_accounts}, Meta};
 
     let nft_auction = NFTAuction::unpack(&nft_auction_info.try_borrow_data()?)?;
-    if &nft_auction.pda_authority != nft_auction_info.key {
+    if nft_auction_authority_info.key != &nft_auction.pda_authority {
         msg!("NFT auction authority is not matched with provided");
         return Err(VoilaError::UnmatchedAccounts.into());
     }
