@@ -12,6 +12,7 @@ use solana_program::{
 pub fn process_transfer<'a>(
     from_info: &AccountInfo<'a>,
     to_info: &AccountInfo<'a>,
+    system_program_info: &AccountInfo<'a>,
     lamports: u64,
     signer_seeds: &[&[u8]],
 ) -> ProgramResult {
@@ -24,6 +25,7 @@ pub fn process_transfer<'a>(
         &[
             from_info.clone(),
             to_info.clone(),
+            system_program_info.clone(),
         ],
         signer_seeds,
     )

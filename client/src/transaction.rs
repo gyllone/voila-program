@@ -126,3 +126,25 @@ pub fn do_purchase_common_nft(
         blockhash,
     )
 }
+
+pub fn do_bid_in_nft_auction(
+    user_authority: &Keypair,
+    auction_info: Pubkey,
+    old_bidder: Option<Pubkey>,
+    price: u64,
+    blockhash: Hash,
+) -> Transaction {
+    Transaction::new_signed_with_payer(
+        &[
+            voila_nft::instruction::bid_in_nft_auction(
+                auction_info,
+                user_authority.pubkey(),
+                old_bidder,
+                price,
+            ),
+        ],
+        Some(&user_authority.pubkey()),
+        &[user_authority],
+        blockhash,
+    )
+}

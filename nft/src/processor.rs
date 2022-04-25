@@ -123,7 +123,13 @@ fn process_purchase_key(
     }
 
     // pay for key
-    process_transfer(user_authority_info, receipt_info, ki.price, &[])?;
+    process_transfer(
+        user_authority_info,
+        receipt_info,
+        system_program_info,
+        ki.price,
+        &[],
+    )?;
 
     process_optimal_create_account(
         rent_info,
@@ -232,7 +238,13 @@ fn process_purchase_common_nft(
     }
 
     // pay for nft
-    process_transfer(user_authority_info, receipt_info, nft_info.price, &[])?;
+    process_transfer(
+        user_authority_info,
+        receipt_info,
+        system_program_info,
+        nft_info.price,
+        &[],
+    )?;
 
     process_init_token_mint(
         rent_info,
@@ -386,6 +398,7 @@ fn process_create_auction_nft(
 fn process_withdraw_from_nft_auction(accounts: &[AccountInfo]) -> ProgramResult {
     let account_info_iter = &mut accounts.iter();
 
+    let system_program_info = next_account_info(account_info_iter)?;
     let nft_auction_info = next_account_info(account_info_iter)?;
     let nft_auction_authority_info = next_account_info(account_info_iter)?;
     let admin_info = next_account_info(account_info_iter)?;
@@ -409,6 +422,7 @@ fn process_withdraw_from_nft_auction(accounts: &[AccountInfo]) -> ProgramResult 
     process_transfer(
         nft_auction_authority_info,
         receipt_info,
+        system_program_info,
         nft_auction_authority_info.lamports(),
         &nft_auction.authority_signer_seeds(nft_auction_info.key),
     )?;
@@ -421,6 +435,7 @@ fn process_bid_in_nft_auction(accounts: &[AccountInfo], raise_price: u64) -> Pro
     let account_info_iter = &mut accounts.iter();
 
     let clock = Clock::from_account_info(next_account_info(account_info_iter)?)?;
+    let system_program_info = next_account_info(account_info_iter)?;
     let nft_auction_info = next_account_info(account_info_iter)?;
     let nft_auction_authority_info = next_account_info(account_info_iter)?;
     let new_bidder_info = next_account_info(account_info_iter)?;
@@ -443,6 +458,7 @@ fn process_bid_in_nft_auction(accounts: &[AccountInfo], raise_price: u64) -> Pro
         process_transfer(
             nft_auction_authority_info,
             last_bidder_info,
+            system_program_info,
             last_bid_info.price,
             &nft_auction.authority_signer_seeds(nft_auction_info.key),
         )?;
@@ -452,6 +468,7 @@ fn process_bid_in_nft_auction(accounts: &[AccountInfo], raise_price: u64) -> Pro
     process_transfer(
         new_bidder_info,
         nft_auction_authority_info,
+        system_program_info,
         nft_auction.current_bid_info.as_ref().unwrap().price,
         &[],
     )?;

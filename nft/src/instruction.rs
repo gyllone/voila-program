@@ -368,6 +368,7 @@ pub fn withdraw_from_nft_auction(
     Instruction {
         program_id: ID,
         accounts: vec![
+            AccountMeta::new_readonly(system_program::ID, false),
             AccountMeta::new_readonly(nft_auction, false),
             AccountMeta::new(nft_auction_authority, false),
             AccountMeta::new_readonly(admin, true),
@@ -387,6 +388,7 @@ pub fn bid_in_nft_auction(
 
     let mut accounts = vec![
         AccountMeta::new_readonly(sysvar::clock::ID, false),
+        AccountMeta::new_readonly(system_program::ID, false),
         AccountMeta::new(nft_auction, false),
         AccountMeta::new(nft_auction_authority, false),
         AccountMeta::new(new_bidder, true),
